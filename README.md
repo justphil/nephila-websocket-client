@@ -22,9 +22,13 @@ Features
 Usage and API
 -------------
 
-### WebSocket Interface
+### WebSocket Interface aka 'How can I act?'
 
-    // create a WebSocket object
+Nephila provides a simple API for sending and streaming text and binary data. Moreover it properly implements the sending
+of ping/pong frames. Consequently it is very easy to develop application level protocols including connection
+maintenance mechanisms. The **WebSocket** interface is the abstraction layer for these functionalities.
+
+    // create a WebSocket object, you have to provide a WebSocketListener implementation
     WebSocket ws = new DefaultWebSocket(new WebSocketListener() {
             ...
     });
@@ -73,3 +77,10 @@ Usage and API
     ws.close();
     // close a WebSocket connection providing a reason
     ws.close("It's over!");
+    
+
+### WebSocketListener Interface aka 'How can I react?'
+
+It is probable that your application is interested in common events like incoming data or a server going down.
+For this purpose you need to pass the DefaultWebSocket constructor a WebSocketListener implementation. In
+particular you have to implement to following methods.
