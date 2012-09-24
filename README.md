@@ -1,4 +1,4 @@
-nephila-websocket-client
+Nephila
 ========================
 
-Java WebSocket client especially built with mobile devices in mind
+Nephila is a pure Java implementation of the latest WebSocket specification as defined in RFC 6455 (http://tools.ietf.org/html/rfc6455).
