@@ -215,6 +215,7 @@ public class DefaultWebSocketTest {
         });
 
         ws.connect(ECHO_URI);
+        ws.
         ws.send("TEST");
         Thread.sleep(1000); // wait in order to ensure that the echoed data has been received (receiving happens in another thread!)
 
