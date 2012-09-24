@@ -24,12 +24,52 @@ Usage and API
 
 ### WebSocket Interface
 
----java
-
+    // create a WebSocket object
     WebSocket ws = new DefaultWebSocket(new WebSocketListener() {
             ...
     });
 
+    // establish a WebSocket connection
     ws.connect("ws://example.com/app");
-
----
+    
+    // send text data
+    ws.send("Hello World!");
+    
+    // send binary data
+    byte[] bytes = new byte[] {0xA, 0xB, 0xC};
+    ws.send(bytes);
+    
+    // stream text data
+    String helloWorld = "Hello World!";
+    int i = 0;
+    while (i++ < helloWorld.length()) {
+        ws.stream(helloWorld.substring(i,1), i == helloWorld.length()-1);
+        //stream char by char and end the stream with a final chunk when (i == helloWorld.length()-1) is true
+    }
+    
+    // stream binary data
+    byte[] bytes = new byte[] {0xA, 0xB, 0xC};
+    int i = 0;
+    while (i++ < bytes.length) {
+        ws.stream(new byte[]{ bytes[i] }, i == bytes.length-1);
+        //stream byte by byte and end the stream with a final chunk when (i == bytes.length-1) is true
+    }
+    
+    // ping
+    ws.ping();
+    // ping with text data
+    ws.ping("Are you there?");
+    // ping with binary data
+    ws.ping(new byte[] {0x1});
+    
+    // pong
+    ws.pong();
+    // pong with text data
+    ws.pong("I'm still alive!");
+    // pong with binary data
+    ws.pong(new byte[] {0x2});
+    
+    // close a WebSocket connection
+    ws.close();
+    // close a WebSocket connection providing a reason
+    ws.close("It's over!");
