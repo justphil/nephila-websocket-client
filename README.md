@@ -25,9 +25,11 @@ Usage and API
 ### WebSocket Interface
 
 ---java
+
     WebSocket ws = new DefaultWebSocket(new WebSocketListener() {
-        ...
+            ...
     });
 
     ws.connect("ws://example.com/app");
+
 ---
