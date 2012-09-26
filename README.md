@@ -210,7 +210,30 @@ This is a complete usage example. Further usage examples can be found in the JUn
 Architecture
 ------------
 
-<div style="text-align: center"><img src="http://cuckoo.io/github/nephila_arch.png" /></div>
+<p align="center">
+  <img src="http://cuckoo.io/github/nephila_arch.png" /><br>
+  <b>Fig. 1:</b> Nephila's Internal Components
+</p>
+
+Nephila's core class is *DefaultWebSocket* that implements the *WebSocket* interface. As can be seen in fig. 1, it
+holds a reference to two further objects, one implementing the *WebSocketListener* interface and the other of
+type *WebSocketReceiver*. Under the hood Nephila uses a plain old Java Socket and stream-based IO (InputStream and OutputStream) in order to
+dispatch all network level operations.
+
+The *DefaultWebSocket* is responsible for establishing the underlying TCP connection, initiating the opening handshake,
+processing the server's opening handshake and dispatching all outgoing operations (exposed to your application through the *WebSocket* interface).
+It is important to mention that all operations that are exposed through the *WebSocket* interface are execute in your
+application's **main thread**.
+
+The *WebSocketReceiver* also holds a reference to your implementation of the *WebSocketListener* interface
+and is responsible for the dispatching of the incoming network traffic. For this purpose it spawns a separate thread.
+Consequently all callback methods (except onConnect()) that you provide by implementing the *WebSocketListener* interface are
+invoked in the separate **WebSocketReceiver thread**.
+This is particularly important if you use Nephila in an Android application, because Android does not allow applications
+to modify UI components within other threads except the main application thread. So in case you want to populate
+an incoming WebSocket event to your UI (and this is what you most likely want to do!), you have to trigger one of Android's
+built-in mechanisms (e.g. [Handlers](http://developer.android.com/reference/android/os/Handler.html)) in order to dispatch
+the UI modification in your application's main thread.
 
 
 Performance / Memory Footprint
