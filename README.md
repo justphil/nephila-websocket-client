@@ -7,7 +7,7 @@ It was especially built with mobile devices in mind (Android). Therefore it caus
 [Grizzly](http://grizzly.java.net/ "Java NIO and Web framework") or [Netty](https://netty.io/ "an asynchronous event-driven network application framework"),
 because it is hard to get these libraries up and running on Android.
 Of course it is also perfectly okay to use Nephila in a context outside of Android, if you are looking for
-a simple and lightweight plain old Socket implementation instead of a NIO implementation.
+a lightweight plain old Socket implementation instead of a NIO implementation.
 
 
 Features
