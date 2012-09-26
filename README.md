@@ -205,3 +205,19 @@ This is a complete usage example. Further usage examples can be found in the JUn
     ws.close();
     // close a WebSocket connection providing a reason
     ws.close("It's over!");
+    
+    
+Architecture
+------------
+
+TODO
+
+Performance / Memory Footprint
+------------------------------
+
+TODO
+
+License
+-------
+
+TODO
