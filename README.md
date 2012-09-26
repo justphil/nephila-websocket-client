@@ -234,7 +234,7 @@ This is particularly important if you use Nephila in an Android application, bec
 to modify UI components within other threads except the main application thread. So in case you want to populate
 an incoming WebSocket event to your UI (and this is what you most likely want to do!), you have to trigger one of Android's
 built-in mechanisms (e.g. [Handlers](http://developer.android.com/reference/android/os/Handler.html)) in order to dispatch
-the UI modification in your application's main thread.
+the UI modification in your application's main thread and not the separate **WebSocketReceiver thread**.
 
 
 Performance / Memory Footprint
