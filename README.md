@@ -210,7 +210,7 @@ This is a complete usage example. Further usage examples can be found in the JUn
 Architecture
 ------------
 
-TODO
+![Nephila Architecture](http://cuckoo.io/github/nephila_arch.png)
 
 Performance / Memory Footprint
 ------------------------------
