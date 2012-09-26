@@ -1,11 +1,11 @@
 Nephila
 =======
 
-Nephila is a plain old **Java Socket** implementation of the latest **WebSocket** specification as defined in
+Nephila is a plain old **Java Socket** client implementation of the latest **WebSocket** specification as defined in
 [RFC 6455](http://tools.ietf.org/html/rfc6455 "RFC 6455 The WebSocket Protocol").
 It was especially built with mobile devices in mind (Android). Therefore it causes a minimal memory footprint and does not use any NIO libraries like
 [Grizzly](http://grizzly.java.net/ "Java NIO and Web framework") or [Netty](https://netty.io/ "an asynchronous event-driven network application framework"),
-because it is hard to get one of these libraries up and running on Android.
+because it is hard to get these libraries up and running on Android.
 Of course it is also perfectly okay to use Nephila in a context outside of Android, if you are looking for
 a simple and lightweight plain old Socket implementation instead of a NIO implementation.
 
@@ -14,12 +14,13 @@ Features
 --------
 
 - Simple and clean API
-- Zero dependency pure Java implementation
+- Zero dependency
 - ws:// and wss:// support
-- Thread safety
+- Thread safe
 - Works on the Android platform
 - Built using plain old Java Socket API instead of NIO (because there are NIO limitations on the Android platform)
 - Implements the complete spec, including sending and streaming of text and binary frames, ping/pong frames, etc.
+- Supports sub protocol negotiation
 
 
 API
