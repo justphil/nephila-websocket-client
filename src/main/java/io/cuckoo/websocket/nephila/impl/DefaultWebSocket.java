@@ -1,3 +1,25 @@
+/**
+ *
+ * This file is part of the
+ *
+ *          Nephila WebSocket Client (https://github.com/justphil/nephila-websocket-client)
+ *
+ * Copyright 2012 Philipp Tarasiewicz <philipp.tarasiewicz@googlemail.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *          http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 package io.cuckoo.websocket.nephila.impl;
 
 import io.cuckoo.websocket.nephila.*;
@@ -18,7 +40,7 @@ import java.util.regex.Pattern;
 
 public class DefaultWebSocket implements WebSocket {
 
-    private final WebSocketListener     webSocketListener;
+    private volatile WebSocketListener  webSocketListener;
     private final WebSocketConfig       webSocketConfig;
     private final String[]              acceptingSubProtocols;
     private final List<String>          negotiatedSubProtocols;
@@ -37,6 +59,10 @@ public class DefaultWebSocket implements WebSocket {
     /* ######################################################################## */
     /* ######################################################################## */
 
+    public DefaultWebSocket() {
+        this(null);
+    }
+
     public DefaultWebSocket(WebSocketListener webSocketListener) {
         this(webSocketListener, new String[0]);
     }
@@ -50,10 +76,6 @@ public class DefaultWebSocket implements WebSocket {
     }
 
     public DefaultWebSocket(WebSocketListener webSocketListener, String[] acceptingSubProtocols, WebSocketConfig webSocketConfig) {
-        if (webSocketListener == null) {
-            throw new IllegalArgumentException("webSocketListener is null");
-        }
-
         if (webSocketConfig == null) {
             throw new IllegalArgumentException("webSocketConfig is null");
         }
@@ -79,6 +101,11 @@ public class DefaultWebSocket implements WebSocket {
     @Override
     public WebSocketListener getWebSocketListener() {
         return webSocketListener;
+    }
+
+    @Override
+    public void setWebSocketListener(WebSocketListener webSocketListener) {
+        this.webSocketListener = webSocketListener;
     }
 
     @Override
@@ -122,7 +149,9 @@ public class DefaultWebSocket implements WebSocket {
             connected = true;
 
             // notify listener
-            webSocketListener.onConnect();
+            if (webSocketListener != null) {
+                webSocketListener.onConnect();
+            }
         }
         catch (IOException ioe) {
             throw new WebSocketException("error while connecting to " + uri.toString() + ": " + ioe.getMessage());
@@ -290,7 +319,9 @@ public class DefaultWebSocket implements WebSocket {
             log.error(getClass(), "error while closing websocket connection: " + ignored.getMessage());
         }
         finally {
-            webSocketListener.onClose();
+            if (webSocketListener != null) {
+                webSocketListener.onClose();
+            }
         }
     }
 

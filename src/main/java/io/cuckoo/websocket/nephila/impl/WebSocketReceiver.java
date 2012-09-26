@@ -1,3 +1,25 @@
+/**
+ *
+ * This file is part of the
+ *
+ *          Nephila WebSocket Client (https://github.com/justphil/nephila-websocket-client)
+ *
+ * Copyright 2012 Philipp Tarasiewicz <philipp.tarasiewicz@googlemail.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *          http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 package io.cuckoo.websocket.nephila.impl;
 
 import io.cuckoo.websocket.nephila.WebSocketListener;
@@ -322,35 +344,51 @@ public class WebSocketReceiver extends Thread {
                     else {
                         if (payloadOrigin == PayloadOrigin.PING_FRAME) {
                             if (payload.length > 0) {
-                                webSocketListener.onPing(payload);
+                                if (webSocketListener != null) {
+                                    webSocketListener.onPing(payload);
+                                }
                             }
                             else {
-                                webSocketListener.onPing();
+                                if (webSocketListener != null) {
+                                    webSocketListener.onPing();
+                                }
                             }
                         }
                         else if (payloadOrigin == PayloadOrigin.PONG_FRAME) {
                             if (payload.length > 0) {
-                                webSocketListener.onPong(payload);
+                                if (webSocketListener != null) {
+                                    webSocketListener.onPong(payload);
+                                }
                             }
                             else {
-                                webSocketListener.onPong();
+                                if (webSocketListener != null) {
+                                    webSocketListener.onPong();
+                                }
                             }
                         }
                         else if (payloadOrigin == PayloadOrigin.DATA_FRAME) {
                             if (inStream) {
                                 if (textFrame) {
-                                    webSocketListener.onMessageChunk(new String(payload, "UTF-8"), isFinalChunk);
+                                    if (webSocketListener != null) {
+                                        webSocketListener.onMessageChunk(new String(payload, "UTF-8"), isFinalChunk);
+                                    }
                                 }
                                 else {
-                                    webSocketListener.onMessageChunk(payload, isFinalChunk);
+                                    if (webSocketListener != null) {
+                                        webSocketListener.onMessageChunk(payload, isFinalChunk);
+                                    }
                                 }
                             }
                             else {
                                 if (textFrame) {
-                                    webSocketListener.onMessage(new String(payload, "UTF-8"));
+                                    if (webSocketListener != null) {
+                                        webSocketListener.onMessage(new String(payload, "UTF-8"));
+                                    }
                                 }
                                 else {
-                                    webSocketListener.onMessage(payload);
+                                    if (webSocketListener != null) {
+                                        webSocketListener.onMessage(payload);
+                                    }
                                 }
                             }
                         }
