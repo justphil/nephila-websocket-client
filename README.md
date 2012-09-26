@@ -210,7 +210,8 @@ This is a complete usage example. Further usage examples can be found in the JUn
 Architecture
 ------------
 
-![Nephila Architecture](http://cuckoo.io/github/nephila_arch.png)
+<div style="text-align: center"><img src="http://cuckoo.io/github/nephila_arch.png" /></div>
+
 
 Performance / Memory Footprint
 ------------------------------
