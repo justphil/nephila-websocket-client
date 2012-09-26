@@ -100,10 +100,10 @@ corresponding setter method to inject it. In particular it is mandatory to imple
 Usage
 -----
 
-This is a complete usage example. Further usage examples can be looked up in the JUnit test cases located in the
+This is a complete usage example. Further usage examples can be found in the JUnit test cases located in the
 *DefaultWebSocketTest* class.
 
-    // create a WebSocket object providing a WebSocketListener implementation
+    // create a WebSocket object and provide a WebSocketListener implementation
     final WebSocket ws = new DefaultWebSocket();
     ws.setWebSocketListener(new WebSocketListener() {
         @Override
