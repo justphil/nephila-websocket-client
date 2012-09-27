@@ -5,7 +5,7 @@ Nephila is a plain old **Java Socket** client implementation of the latest **Web
 [RFC 6455](http://tools.ietf.org/html/rfc6455 "RFC 6455 The WebSocket Protocol").
 It was especially built with mobile devices in mind (Android) and therefore causes a minimal memory footprint. Nephila does not use any NIO libraries like
 [Grizzly](http://grizzly.java.net/ "Java NIO and Web framework") or [Netty](https://netty.io/ "an asynchronous event-driven network application framework") (although they are pretty neat!),
-because one the hand it is hard to get these libraries up and running on Android and on the other hand their memory
+because on the hand it is hard to get these libraries up and running on Android and on the other hand their memory
 consumption is significantly higher than conventional IO's memory consumption.
 Of course it is also perfectly okay to use Nephila in a context outside of Android, if you are looking for
 a lightweight plain old Socket implementation instead of a NIO implementation.
@@ -36,7 +36,7 @@ In order to enable Web developers to make use of the WebSocket protocol the W3C 
 WebSocket JavaScript API. Although this API only pays attention to a subset of the WebSocket protocol it
 enables Web developers to easily build novel "real-time" (as defined in the context of the Web) web applications running in the browser.
 
-Besides a WebSocket enabled browser another requirement is that the application's backend also need to speak the WebSocket
+Besides a WebSocket enabled browser another requirement is that the application's backend also needs to speak the WebSocket
 protocol. Consequently, novel applications need to build application protocols on top of the WebSocket protocol in order to
 realize their specified use cases.
 
