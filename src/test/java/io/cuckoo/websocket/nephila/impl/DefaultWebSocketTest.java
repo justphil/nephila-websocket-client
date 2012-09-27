@@ -26,6 +26,7 @@ import io.cuckoo.websocket.nephila.WebSocket;
 import io.cuckoo.websocket.nephila.WebSocketConfig;
 import io.cuckoo.websocket.nephila.WebSocketException;
 import io.cuckoo.websocket.nephila.WebSocketListener;
+import io.cuckoo.websocket.nephila.helpers.ReceivingStreamWebSocketApplication;
 import io.cuckoo.websocket.nephila.helpers.WebSocketServer;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -33,8 +34,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 import java.util.Random;
 
 import static org.junit.Assert.*;
@@ -44,7 +44,7 @@ public class DefaultWebSocketTest {
     private static final URI ECHO_URI           = URI.create("ws://localhost:8888/echo");
     private static final URI SUB_PROTOCOL_URI   = URI.create("ws://localhost:8888/subprotocoltest");
     private static final String ALPHABET        = "abcdefghijklmnopqrstuvwxyz";
-    private static final int STREAMING_SEQUENCE_LENGTH = 30;
+    private static final int STREAMING_SEQUENCE_LENGTH = 10;
 
     // These properties are overwritten by multiple threads, therefore marked as 'volatile'
     private volatile String receivedStringMessage;
@@ -329,9 +329,7 @@ public class DefaultWebSocketTest {
 
         receivedByteMessage = receivingDataListener.getReceivedBytes();
 
-        for(int i = 0; i < data.length; i++) {
-            assertEquals("the received byte array must be equal to the sent byte array", data[i], receivedByteMessage[i]);
-        }
+        assertTrue("the received byte array must be equal to the sent byte array", Arrays.equals(data, receivedByteMessage));
 
         ws.close();
     }
@@ -354,48 +352,24 @@ public class DefaultWebSocketTest {
 
         receivedByteMessage = receivingDataListener.getReceivedBytes();
 
-        for(int i = 0; i < data.length; i++) {
-            assertEquals("the received byte array must be equal to the sent byte array", data[i], receivedByteMessage[i]);
-        }
+        assertTrue("the received byte array must be equal to the sent byte array", Arrays.equals(data, receivedByteMessage));
 
         ws.close();
     }
 
     @Test
-    public void testStreamStringChunks() throws Exception {
-        ReceivingDataListener receivingDataListener = new ReceivingDataListener();
-        WebSocket ws = new DefaultWebSocket(receivingDataListener);
+    public void testStreamEmptyStringChunks() throws Exception {
+        streamStringChunks(0);
+    }
 
-        ws.connect(ECHO_URI);
-        String[] text = new String[] {"abc", "def", "ghi", "jkl", "mno", "pqr", "stu", "vwxyz"};
+    @Test
+    public void testStreamOneCharStringChunks() throws Exception {
+        streamStringChunks(1);
+    }
 
-        for (int i = 0; i < text.length; i++) {
-            ws.stream(text[i], (i == text.length - 1));
-        }
-
-        int attempts = 0;
-        while (!receivingDataListener.isFinished() && attempts < 5) {
-            Thread.sleep(500);
-            attempts++;
-        }
-
-        if (!receivingDataListener.isFinished()) {
-            System.out.println("receivingDataListener.getText() -> " + receivingDataListener.getText());
-            fail("receivingDataListener hasn't finished in time");
-        }
-
-        assertNotNull("receivingDataListener.getText() shall not be null after having waited for the echo", receivingDataListener.getText());
-
-        receivedStringMessage = receivingDataListener.getText();
-
-        String concatText = "";
-        for (String aText : text) {
-            concatText += aText;
-        }
-
-        assertEquals("the received text chunks must be equal to the sent text chunks", concatText, receivedStringMessage);
-
-        ws.close();
+    @Test
+    public void testStreamStringChunksOf125Bytes() throws Exception {
+        streamStringChunks(125);
     }
 
     @Test
@@ -404,51 +378,38 @@ public class DefaultWebSocketTest {
     }
 
     @Test
+    public void testStreamStringChunksOf65535Bytes() throws Exception {
+        streamStringChunks(65535);
+    }
+
+    @Test
     public void testStreamStringChunksGreaterThan65535Bytes() throws Exception {
         streamStringChunks(65536);
     }
 
     @Test
-    public void testStreamByteChunks() throws Exception {
-        ReceivingDataListener receivingDataListener = new ReceivingDataListener();
-        WebSocket ws = new DefaultWebSocket(receivingDataListener);
-        ws.connect(ECHO_URI);
+    public void testStreamZeroByteChunks() throws Exception {
+        streamByteChunks(0);
+    }
 
-        byte[] data = new byte[] {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8};
+    @Test
+    public void testStreamSmallByteChunks() throws Exception {
+        streamByteChunks(1);
+    }
 
-        for (int i = 0; i < data.length; i++) {
-            if (i == data.length-1) {
-                ws.stream(new byte[] { data[i] }, true);
-            }
-            else {
-                ws.stream(new byte[] { data[i] }, false);
-            }
-        }
-
-        int attempts = 0;
-        while (!receivingDataListener.isFinished() && attempts < 5) {
-            Thread.sleep(500);
-            attempts++;
-        }
-
-        if (!receivingDataListener.isFinished()) {
-            fail("receivingDataListener hasn't finished in time");
-        }
-
-        assertNotNull("receivingDataListener.getData() shall not be null after having waited for the echo", receivingDataListener.getData());
-
-        receivedByteMessage = receivingDataListener.getData();
-
-        for(int i = 0; i < data.length; i++) {
-            assertEquals("the received byte array must be equal to the sent byte array", data[i], receivedByteMessage[i]);
-        }
-
-        ws.close();
+    @Test
+    public void testStreamByteChunksOf125Bytes() throws Exception {
+        streamByteChunks(125);
     }
 
     @Test
     public void testStreamByteChunksGreaterThan125Bytes() throws Exception {
         streamByteChunks(126);
+    }
+
+    @Test
+    public void testStreamByteChunksOf65535Bytes() throws Exception {
+        streamByteChunks(65535);
     }
 
     @Test
@@ -700,9 +661,14 @@ public class DefaultWebSocketTest {
     /* ######################################################################## */
 
     private void streamStringChunks(int chunkSize) throws Exception {
-        ReceivingDataListener receivingDataListener = new ReceivingDataListener();
-        WebSocket ws = new DefaultWebSocket(receivingDataListener);
-        ws.connect(ECHO_URI);
+        ConnectionIdListener connectionIdListener = new ConnectionIdListener();
+        WebSocket ws = new DefaultWebSocket(connectionIdListener);
+        ws.connect("ws://localhost:8888/" + ReceivingStreamWebSocketApplication.PATH);
+
+        ws.send(ReceivingStreamWebSocketApplication.NEW_TEXT_STREAMING_SEQUENCE_INDICATOR);
+
+        // wait for connectionId
+        Thread.sleep(1000);
 
         // utf-8 encoded string with chunkSize chars needs min. chunkSize bytes
         StringBuilder sb = new StringBuilder(chunkSize);
@@ -711,12 +677,20 @@ public class DefaultWebSocketTest {
             sb.append(ALPHABET.charAt(r.nextInt(ALPHABET.length())));
         }
 
-        //StringBuilder expectedSb = new StringBuilder(STREAMING_SEQUENCE_LENGTH * sb.length());
+        StringBuilder expectedSb = new StringBuilder(STREAMING_SEQUENCE_LENGTH * sb.length());
         final String toSend = sb.toString();
         for (int i = 0; i < STREAMING_SEQUENCE_LENGTH; i++) {
-            //expectedSb.append(toSend);
+            expectedSb.append(toSend);
             ws.stream(toSend, (i == STREAMING_SEQUENCE_LENGTH - 1));
         }
+
+        Thread.sleep(2000);
+
+        String textServerHasReceived = ReceivingStreamWebSocketApplication.getInstance().getTextDataByConnectionId(connectionIdListener.getConnectionId());
+
+        assertNotNull("textServerHasReceived cannot be null", textServerHasReceived);
+
+        assertEquals("the sent text must be equal to the text the server has received", expectedSb.toString(), textServerHasReceived);
 
         /*
         String expected = expectedSb.toString();
@@ -743,13 +717,21 @@ public class DefaultWebSocketTest {
     }
 
     private void streamByteChunks(int chunkSize) throws Exception {
-        ReceivingDataListener receivingDataListener = new ReceivingDataListener();
-        WebSocket ws = new DefaultWebSocket(receivingDataListener);
-        ws.connect(ECHO_URI);
+        WebSocket ws = new DefaultWebSocket();
+        ConnectionIdListener connectionIdListener = new ConnectionIdListener();
+        ws.setWebSocketListener(connectionIdListener);
+        ws.connect("ws://localhost:8888/" + ReceivingStreamWebSocketApplication.PATH);
+
+        ws.send(ReceivingStreamWebSocketApplication.NEW_BINARY_STREAMING_SEQUENCE_INDICATOR);
+
+        // wait for connectionId
+        Thread.sleep(1000);
 
         Random r = new Random(System.nanoTime());
         byte[] data = new byte[chunkSize * STREAMING_SEQUENCE_LENGTH];
         r.nextBytes(data);
+
+        //System.out.println("streamByteChunks() ## expected: " + Arrays.toString(data));
 
         byte[] tmp;
         int x;
@@ -764,69 +746,22 @@ public class DefaultWebSocketTest {
 
         Thread.sleep(2000);
 
-        //assertNotNull("receivingDataListener.getData() shall not be null after having waited for the echo", receivingDataListener.getData());
+        byte[] binaryData = ReceivingStreamWebSocketApplication.getInstance().getBinaryDataByConnectionId(connectionIdListener.getConnectionId());
 
-        //receivedByteMessage = receivingDataListener.getData();
+        assertNotNull("binaryData cannot be null", binaryData);
 
-        /*
-        for(int i = 0; i < data.length; i++) {
-            assertEquals("the received byte chunks must be equal to the sent byte chunks", data[i], receivedByteMessage[i]);
-        }
-        */
+        assertTrue("the sent binary data must be equal the binary data the server has received", Arrays.equals(data, binaryData));
 
         ws.close();
     }
-
-    /*
-    private void BACKUPstreamByteChunks(int chunkSize) throws Exception {
-        ReceivingDataListener receivingDataListener = new ReceivingDataListener();
-        WebSocket ws = new DefaultWebSocket(receivingDataListener);
-        ws.connect(ECHO_URI);
-
-        Random r = new Random(System.nanoTime());
-        byte[] data = new byte[chunkSize];
-        r.nextBytes(data);
-
-        byte[] expected = new byte[data.length * STREAMING_SEQUENCE_LENGTH];
-        log.debug(getClass(), "expected.length: " + expected.length);
-        log.debug(getClass(), "data.length: " + data.length);
-        for(int i = 0; i < expected.length; i++) {
-            expected[i] = data[i%data.length];
-        }
-
-        for (int i = 0; i < STREAMING_SEQUENCE_LENGTH; i++) {
-            ws.stream(data, (i == STREAMING_SEQUENCE_LENGTH - 1));
-        }
-
-        int attempts = 0;
-        while (!receivingDataListener.isFinished() && attempts < 5) {
-            Thread.sleep(1500);
-            attempts++;
-        }
-
-        if (!receivingDataListener.isFinished()) {
-            fail("receivingDataListener hasn't finished in time. try to increase the sleep time or the number of attempts to pass the test");
-        }
-
-        assertNotNull("receivingDataListener.getData() shall not be null after having waited for the echo", receivingDataListener.getData());
-
-        receivedByteMessage = receivingDataListener.getData();
-
-        for(int i = 0; i < expected.length; i++) {
-            assertEquals("the received byte chunks must be equal to the sent byte chunks", expected[i], receivedByteMessage[i]);
-        }
-
-        ws.close();
-    }
-    */
 
     /* ######################################################################## */
     /* ######################################################################## */
     /* ######################################################################## */
 
     private class ReceivingDataListener implements WebSocketListener {
-        private final List<Byte> data            = new ArrayList<Byte>();
-        private volatile boolean finished       = false;
+        //private final List<Byte> data            = new ArrayList<Byte>();
+        //private volatile boolean finished       = false;
         private volatile String text            = "";
         private volatile byte[] receivedBytes   = null;
         private volatile boolean pingReceived   = false;
@@ -836,7 +771,7 @@ public class DefaultWebSocketTest {
         private volatile boolean connected      = false;
 
 
-        public byte[] getData() {
+        /*public byte[] getData() {
             byte[] byteArray = new byte[data.size()];
             int i = 0;
             for(byte b : data) {
@@ -845,7 +780,7 @@ public class DefaultWebSocketTest {
             }
 
             return byteArray;
-        }
+        }*/
 
         public String getText() {
             return text;
@@ -855,9 +790,9 @@ public class DefaultWebSocketTest {
             return receivedBytes;
         }
 
-        public boolean isFinished() {
+        /*public boolean isFinished() {
             return finished;
-        }
+        }*/
 
         public boolean isPingReceived() {
             return pingReceived;
@@ -904,15 +839,15 @@ public class DefaultWebSocketTest {
         public void onMessageChunk(String messageChunk, boolean isFinalChunk) {
             text += messageChunk;
 
-            if (isFinalChunk) {
+            /*if (isFinalChunk) {
                 finished = true;
-            }
+            }*/
         }
 
         @Override
         public void onMessageChunk(byte[] messageChunk, boolean isFinalChunk) {
             //log.debug(getClass(), "onMessageChunk() # length -> " + messageChunk.length + " # last -> " + isFinalChunk);
-
+            /*
             synchronized (data) {
                 for(byte b : messageChunk) {
                     data.add(b);
@@ -921,7 +856,7 @@ public class DefaultWebSocketTest {
 
             if (isFinalChunk) {
                 finished = true;
-            }
+            }*/
         }
 
         @Override
@@ -945,6 +880,54 @@ public class DefaultWebSocketTest {
             pongReceived = true;
             pongData = data;
         }
+    }
+
+    private class ConnectionIdListener implements WebSocketListener {
+        private volatile int connectionId;
+
+        /* ######################################################################## */
+        /* ######################################################################## */
+        /* ######################################################################## */
+
+        public int getConnectionId() {
+            return connectionId;
+        }
+
+        /* ######################################################################## */
+        /* ######################################################################## */
+        /* ######################################################################## */
+
+        @Override
+        public void onConnect() {}
+
+        @Override
+        public void onClose() {}
+
+        @Override
+        public void onMessage(String message) {
+            connectionId = Integer.parseInt(message);
+        }
+
+        @Override
+        public void onMessage(byte[] message) {}
+
+        @Override
+        public void onMessageChunk(String messageChunk, boolean isFinalChunk) {}
+
+        @Override
+        public void onMessageChunk(byte[] messageChunk, boolean isFinalChunk) {}
+
+        @Override
+        public void onPing() {}
+
+        @Override
+        public void onPing(byte[] data) {}
+
+        @Override
+        public void onPong() {}
+
+        @Override
+        public void onPong(byte[] data) {}
     }
 
     private class DummyListener implements WebSocketListener {

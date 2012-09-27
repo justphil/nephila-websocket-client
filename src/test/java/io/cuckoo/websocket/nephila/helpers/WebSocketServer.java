@@ -42,10 +42,12 @@ public class WebSocketServer {
     private WebSocketServer(int port) {
         server = HttpServer.createSimpleServer("./", port);
         server.getListener("grizzly").registerAddOn(new WebSocketAddOn());
-        EchoWebSocketApplication echoApp                = new EchoWebSocketApplication();
-        SubProtocolWebSocketApplication subProtocolApp  = new SubProtocolWebSocketApplication();
+        EchoWebSocketApplication echoApp                        = new EchoWebSocketApplication();
+        SubProtocolWebSocketApplication subProtocolApp          = new SubProtocolWebSocketApplication();
+        ReceivingStreamWebSocketApplication receivingStreamApp  = ReceivingStreamWebSocketApplication.getInstance();
         WebSocketEngine.getEngine().register(echoApp);
         WebSocketEngine.getEngine().register(subProtocolApp);
+        WebSocketEngine.getEngine().register(receivingStreamApp);
         log = new ConsoleLogger(new DefaultWebSocketConfig());
         stop = false;
     }
