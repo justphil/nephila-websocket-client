@@ -24,6 +24,46 @@ Features
 - Supports sub protocol negotiation
 
 
+Purpose
+-------
+
+The WebSocket protocol is an application layer network protocol (developed by the IETF) above the TCP/IP stack
+and was primarily developed in order to allow Web pages to establish an asynchronous two-way communication channel to a Web server. To emulate
+a similar behaviour many Web pages still use diverse workaround techniques like long polling, HTTP streaming or
+Flash sockets.
+
+In order to enable Web developers to make use of the WebSocket protocol the W3C has developed an official
+WebSocket JavaScript API. Although this API only pays attention to a subset of the WebSocket protocol it
+enables Web developers to easily build novel "real-time" (as defined in the context of the Web) web applications running in the browser.
+
+Besides a WebSocket enabled browser another requirement is that the application's backend also need to speak the WebSocket
+protocol. Consequently, novel applications need to build application protocols on top of the WebSocket protocol in order to
+realize their specified use cases.
+
+So the question that arises is: How can native applications (e.g. Android or iOS) be integrated into this context?
+Although the most popular mobile platforms provide browsers with WebSocket support, there are many use cases that
+require the development of a native application instead of a mobile Web app. The causes are mainly: bad performance,
+unsatisfactory user experience or the browser not allowing hardware access to e.g. the accelerometer or compass.
+So, even if you need to develop a native application you probably would like to access your WebSocket enabled backend
+in the same way your Web page (created for desktop usage) does, because it is time-consuming and complex to develop multiple backend
+interfaces for different terminals.
+
+To cut a long story short, Nephila can help you to build cross-platform applications that access a WebSocket enabled
+backend interface in a unified way. While building your Web app on top of the WebSocket JavaScript API, you can use Nephila to
+build a native Android application accessing the same backend API.
+
+A common use case for this kind of application are games. If you are about to develop a stunning new multiplayer online game that
+should run on multiple platforms (desktop browser, Android, iOS, etc.) and want to enable your players to play against each other
+although running the game on a different platform, a proven (but time-consuming and complex) method is to develop a backend with multiple interfaces
+for the different platforms. E.g. you could develop a long polling interface for the desktop browser access and a
+TCP based protocol for the Android and iOS app. Then you have to find a way to handle both interfaces in a similar way
+to allow the communication between desktop browser players and Android/iOS players: an extremely complex task.
+
+A much easier and less time-consuming design is to build a unified WebSocket enabled backend interface and access
+it from different platforms in the same way. Nephila is your way to go for the Android platform!
+
+
+
 API
 ---
 
