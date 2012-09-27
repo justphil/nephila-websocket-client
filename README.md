@@ -3,9 +3,10 @@ Nephila
 
 Nephila is a plain old **Java Socket** client implementation of the latest **WebSocket** specification as defined in
 [RFC 6455](http://tools.ietf.org/html/rfc6455 "RFC 6455 The WebSocket Protocol").
-It was especially built with mobile devices in mind (Android). Therefore it causes a minimal memory footprint and does not use any NIO libraries like
-[Grizzly](http://grizzly.java.net/ "Java NIO and Web framework") or [Netty](https://netty.io/ "an asynchronous event-driven network application framework"),
-because it is hard to get these libraries up and running on Android.
+It was especially built with mobile devices in mind (Android) and therefore causes a minimal memory footprint. Nephila does not use any NIO libraries like
+[Grizzly](http://grizzly.java.net/ "Java NIO and Web framework") or [Netty](https://netty.io/ "an asynchronous event-driven network application framework") (although they are pretty neat!),
+because one the hand it is hard to get these libraries up and running on Android and on the other hand their memory
+consumption is significantly higher than conventional IO's memory consumption.
 Of course it is also perfectly okay to use Nephila in a context outside of Android, if you are looking for
 a lightweight plain old Socket implementation instead of a NIO implementation.
 
@@ -216,7 +217,7 @@ Architecture
   <b>Fig. 1:</b> Nephila's Internal Components
 </p>
 
-Nephila's core class is *DefaultWebSocket* that implements the *WebSocket* interface. As can be seen in fig. 1, it
+Nephila's core class is *DefaultWebSocket* class which implements the *WebSocket* interface. As can be seen in fig. 1, it
 holds a reference to two further objects, one implementing the *WebSocketListener* interface and the other of
 type *WebSocketReceiver*. Under the hood Nephila uses a plain old Java Socket and stream-based IO (InputStream and OutputStream) in order to
 dispatch all network level operations.
