@@ -30,10 +30,7 @@ import io.cuckoo.websocket.nephila.crypto.SHA1;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Pattern;
 
 
@@ -57,13 +54,26 @@ public class WebSocketHandshake {
 
 	public byte[] getHandshakeBytes(String acceptingSubProtocolsCSV) throws WebSocketException {
 		String path = url.getPath();
+        if (path == null || path.trim().isEmpty()) {
+            path = "/";
+        }
+
 		String host = url.getHost();
-		//origin = "http://" + host;
+
+        int port = url.getPort();
+        if (port == -1) {
+            if (url.getScheme().equalsIgnoreCase("wss")) {
+                port = 443;
+            }
+            else {
+                port = 80;
+            }
+        }
 		
 		StringBuilder sb = new StringBuilder();
 		
 		sb.append("GET ").append(path).append(" HTTP/1.1")			.append(CRLF);
-		sb.append("Host: ").append(host)							.append(CRLF);
+		sb.append("Host: ").append(host).append(":").append(port)   .append(CRLF);
 		sb.append("Upgrade: websocket")								.append(CRLF);
 		sb.append("Connection: Upgrade")							.append(CRLF);
 		sb.append("Sec-WebSocket-Key: ").append(key)				.append(CRLF);
@@ -204,7 +214,9 @@ public class WebSocketHandshake {
 	private KeyGenerationResult generateKeys() throws WebSocketException {
 		try {
             final long time = System.nanoTime();
-			final String key = Base64.encodeToString(String.valueOf(time).getBytes("UTF-8"), false);
+            Random r = new Random(time);
+            String timeString = String.valueOf(time) + r.nextInt(10)  + r.nextInt(10);
+			final String key = Base64.encodeToString(timeString.getBytes("UTF-8"), false);
             final String exp = key + GUID;
             byte[] sha1Hash = SHA1.encode(exp);
             byte[] expectedSecWebSocketAcceptValue = Base64.encodeToByte(sha1Hash, false);
