@@ -23,6 +23,7 @@
 package io.cuckoo.websocket.nephila.impl;
 
 import io.cuckoo.websocket.nephila.*;
+import io.cuckoo.websocket.nephila.util.ByteArrayUtils;
 import io.cuckoo.websocket.nephila.util.ConsoleLogger;
 import io.cuckoo.websocket.nephila.util.Logger;
 
@@ -46,6 +47,9 @@ public class DefaultWebSocket implements WebSocket {
     private final List<String>          negotiatedSubProtocols;
     private final Random                random;
     private final Logger                log;
+    private final byte[]                payloadSizeLessEqualThan65535Buffer;
+    private final byte[]                payloadSizeGreaterThan65535Buffer;
+    private final byte[]                maskingKeyArray;
     private Socket                      socket;
     private InputStream                 input;
     private BufferedOutputStream        output;
@@ -92,6 +96,13 @@ public class DefaultWebSocket implements WebSocket {
         this.log                    = new ConsoleLogger(webSocketConfig);
         this.connected              = false;
         this.streaming              = false;
+
+        // Network byte order is big endian
+        //this.payloadSizeLessEqualThan65535Buffer     = ByteBuffer.allocateDirect(4).order(ByteOrder.BIG_ENDIAN);
+        //this.payloadSizeGreaterThan65535Buffer  = ByteBuffer.allocateDirect(8).order(ByteOrder.BIG_ENDIAN);
+        this.payloadSizeLessEqualThan65535Buffer    = new byte[4];
+        this.payloadSizeGreaterThan65535Buffer      = new byte[8];
+        this.maskingKeyArray                        = new byte[4];
     }
 
     /* ######################################################################## */
@@ -164,7 +175,7 @@ public class DefaultWebSocket implements WebSocket {
             throw new IllegalArgumentException("uri is null");
         }
 
-        if (uri.trim().isEmpty()) {
+        if (uri.trim().length() == 0) {
             throw new IllegalArgumentException("uri is empty");
         }
 
@@ -382,7 +393,7 @@ public class DefaultWebSocket implements WebSocket {
             if (scheme.equals("ws")) {
                 SocketAddress sockAddr = new InetSocketAddress(host, port);
                 socket = new Socket();
-                socket.setTcpNoDelay(true);
+                socket.setTcpNoDelay(false);
                 socket.connect(sockAddr, webSocketConfig.getSocketTimeout());
             }
             else if (scheme.equals("wss")) {
@@ -490,9 +501,9 @@ public class DefaultWebSocket implements WebSocket {
         while( (!ready && (s = bufferedIn.readLine()) != null)) {   // the !ready must be on the left hand side of the
                                                                     // boolean expression because readLine() is
                                                                     // a blocking call!
-            if (!s.isEmpty()) {
+            if (s.length() > 0) {
                 serverHandshakeLines.add(s);
-                //log.debug(getClass(), "processServerOpeningHandshake() # " + s);
+                log.debug(getClass(), "processServerOpeningHandshake() # " + s);
             }
             else {
                 ready = true;
@@ -518,36 +529,6 @@ public class DefaultWebSocket implements WebSocket {
         }
         handshake.verifyServerHandshakeHeaders(headers);
     }
-
-    /*
-    private boolean checkReady(String s) {
-        return s.isEmpty();
-
-        boolean ready = false;
-
-        final String secWebSocketProtocol   = "Sec-WebSocket-Protocol";
-        final String secWebSocketAccept     = "Sec-WebSocket-Accept";
-
-        if (handshake.getProtocol() != null) {
-            String tmp = s.trim();
-            if (tmp.length() >= secWebSocketProtocol.length()) {
-                if (secWebSocketProtocol.equalsIgnoreCase(tmp.substring(0, secWebSocketProtocol.length()))) {
-                    ready = true;
-                }
-            }
-        }
-        else {
-            String tmp = s.trim();
-            if (tmp.length() >= secWebSocketAccept.length()) {
-                if (secWebSocketAccept.equalsIgnoreCase(tmp.substring(0, secWebSocketAccept.length()))) {
-                    ready = true;
-                }
-            }
-        }
-
-        return ready;
-    }
-    */
 
     private String getSecWebSocketAccept(List<String> handshakeLines) throws WebSocketException {
         final String secWebSocketAccept = "Sec-WebSocket-Accept";
@@ -599,18 +580,17 @@ public class DefaultWebSocket implements WebSocket {
         return null;
     }
 
-    private int getRandomInt() {
+    /*private int getRandomInt() {
         return random.nextInt(256);
-    }
+    }*/
 
     private byte[] maskPayload(byte[] payload, byte[] maskingKey) {
-        byte[] out = new byte[payload.length];
-
-        for(int i = 0; i < out.length; i++) {
-            out[i] = (byte) (payload[i] ^ maskingKey[i%4]);
+        //byte[] out = new byte[payload.length];
+        for(int i = 0; i < payload.length; i++) {
+            payload[i] = (byte) (payload[i] ^ maskingKey[i%4]);
         }
 
-        return out;
+        return payload;
     }
 
     private synchronized void write(byte[] data, boolean fin, byte opCode, boolean mask) throws WebSocketException {
@@ -625,9 +605,10 @@ public class DefaultWebSocket implements WebSocket {
         try {
             int payloadSize = data.length;
 
-            // copy data because it will be manipulated (mask)
+            // clone data because it will be manipulated (masking)
             // byte is primitive, so we get a deep copy although cloning
-            byte[] payloadBytes = data.clone();
+            //byte[] payloadBytes = data.clone();
+            byte[] payloadBytes = data;
 
             // FIN bit
             //log.debug(getClass(), "write() # fin -> " + fin);
@@ -692,7 +673,10 @@ public class DefaultWebSocket implements WebSocket {
                 output.write(i); // mask (1) and payload len (7)
 
                 // 16-bit unsigned integer (2 bytes)
-                byte[] bit16 = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN).putInt( payloadSize ).array();
+                //payloadSizeLessEqualThan65535Buffer.clear();
+                //byte[] bit16 = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN).putInt( payloadSize ).array();
+                //byte[] bit16 = payloadSizeLessEqualThan65535Buffer.putInt( payloadSize ).array();
+                byte[] bit16 = ByteArrayUtils.intToByteArray(payloadSizeLessEqualThan65535Buffer, payloadSize);
                 output.write(bit16, 2, 2); // send the two low order bytes
             }
             else {
@@ -709,7 +693,9 @@ public class DefaultWebSocket implements WebSocket {
                 // but the spec says that payload sizes larger than 65535 bytes must be denoted by
                 // a 64-bit unsigned integer (the most significant bit MUST be 0), therefore we describe an 32 bit
                 // integer as a 64 bit long
-                byte[] bit64 = ByteBuffer.allocate(8).order(ByteOrder.BIG_ENDIAN).putLong((long) payloadSize).array();
+                //payloadSizeGreaterThan65535Buffer.clear();
+                //byte[] bit64 = ByteBuffer.allocate(8).order(ByteOrder.BIG_ENDIAN).putLong((long) payloadSize).array();
+                byte[] bit64 = ByteArrayUtils.longToByteArray(payloadSizeGreaterThan65535Buffer, (long) payloadSize);
                 output.write(bit64);
             }
 
@@ -721,12 +707,13 @@ public class DefaultWebSocket implements WebSocket {
              */
 
             if (mask) {
-                byte[] maskingKey = new byte[] { (byte) getRandomInt(), (byte) getRandomInt(), (byte) getRandomInt(), (byte) getRandomInt() };
-                output.write(maskingKey[0]); // *
-                output.write(maskingKey[1]); // * masking key (32)
-                output.write(maskingKey[2]); // *
-                output.write(maskingKey[3]); // *
-                payloadBytes = maskPayload(payloadBytes, maskingKey);
+                random.nextBytes(maskingKeyArray);
+                //byte[] maskingKey = new byte[] { (byte) getRandomInt(), (byte) getRandomInt(), (byte) getRandomInt(), (byte) getRandomInt() };
+                output.write(maskingKeyArray[0]); // *
+                output.write(maskingKeyArray[1]); // * masking key (32)
+                output.write(maskingKeyArray[2]); // *
+                output.write(maskingKeyArray[3]); // *
+                payloadBytes = maskPayload(payloadBytes, maskingKeyArray);
             }
 
 
@@ -734,7 +721,13 @@ public class DefaultWebSocket implements WebSocket {
             output.flush();
         }
         catch (IOException ioe) {
-            throw new WebSocketException("error while sending data", ioe);
+            if (ioe instanceof SocketException) {
+                //System.out.println("### SocketException ###");
+                onServerClosingHandshake();
+            }
+            else {
+                throw new WebSocketException("error while sending data", ioe);
+            }
         }
     }
 

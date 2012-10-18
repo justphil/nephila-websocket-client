@@ -54,8 +54,13 @@ public class WebSocketHandshake {
 
 	public byte[] getHandshakeBytes(String acceptingSubProtocolsCSV) throws WebSocketException {
 		String path = url.getPath();
-        if (path == null || path.trim().isEmpty()) {
+        if (path == null || path.trim().length() == 0) {
             path = "/";
+        }
+
+        String query = url.getQuery();
+        if (query == null) {
+            query = "";
         }
 
 		String host = url.getHost();
@@ -72,17 +77,17 @@ public class WebSocketHandshake {
 		
 		StringBuilder sb = new StringBuilder();
 		
-		sb.append("GET ").append(path).append(" HTTP/1.1")			.append(CRLF);
-		sb.append("Host: ").append(host).append(":").append(port)   .append(CRLF);
-		sb.append("Upgrade: websocket")								.append(CRLF);
-		sb.append("Connection: Upgrade")							.append(CRLF);
-		sb.append("Sec-WebSocket-Key: ").append(key)				.append(CRLF);
+		sb.append("GET ").append(path).append(query.length() > 0 ? "?" : "").append(query).append(" HTTP/1.1").append(CRLF);
+		sb.append("Host: ").append(host).append(":").append(port)       .append(CRLF);
+		sb.append("Upgrade: websocket")								    .append(CRLF);
+		sb.append("Connection: Upgrade")							    .append(CRLF);
+		sb.append("Sec-WebSocket-Key: ").append(key)				    .append(CRLF);
 		
 		if (acceptingSubProtocolsCSV != null ) {
 			sb.append("Sec-WebSocket-Protocol: ").append(acceptingSubProtocolsCSV).append(CRLF);
 		}
 		
-		sb.append("Sec-WebSocket-Version: 13")						.append(CRLF);
+		sb.append("Sec-WebSocket-Version: 13")						    .append(CRLF);
 		sb.append(CRLF);
 				
 		try {
@@ -133,11 +138,11 @@ public class WebSocketHandshake {
             }
 
             String secWebSocketProtocolValue = segs[1].trim();
-            if (!secWebSocketProtocolValue.isEmpty() && acceptingSubProtocols.length == 0) {
+            if (secWebSocketProtocolValue.length() > 0 && acceptingSubProtocols.length == 0) {
                 throw new WebSocketException("cannot talk any of the sub protocols the server has provided: "
                         + secWebSocketProtocolValue);
             }
-            else if (secWebSocketProtocolValue.isEmpty() && acceptingSubProtocols.length > 0) {
+            else if (secWebSocketProtocolValue.length() == 0 && acceptingSubProtocols.length > 0) {
                 throw new WebSocketException("server cannot talk any of the sub protocols the client has provided: "
                         + Arrays.toString(acceptingSubProtocols));
             }
@@ -151,7 +156,7 @@ public class WebSocketHandshake {
                     }
                 }
 
-                if (negotiatedSubProtocols.isEmpty()) {
+                if (negotiatedSubProtocols.size() == 0) {
                     throw new WebSocketException("couldn't find a sub protocol that both parties are speaking");
                 }
             }

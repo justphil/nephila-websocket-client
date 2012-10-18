@@ -26,8 +26,9 @@ import io.cuckoo.websocket.nephila.WebSocket;
 import io.cuckoo.websocket.nephila.WebSocketConfig;
 import io.cuckoo.websocket.nephila.WebSocketException;
 import io.cuckoo.websocket.nephila.WebSocketListener;
-import io.cuckoo.websocket.nephila.helpers.ReceivingStreamWebSocketApplication;
-import io.cuckoo.websocket.nephila.helpers.WebSocketServer;
+import io.cuckoo.websocket.nephila.utils.ReceivingStreamWebSocketApplication;
+import io.cuckoo.websocket.nephila.utils.SendDataOnConnectWebSocketApplication;
+import io.cuckoo.websocket.nephila.utils.WebSocketServer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -296,6 +297,7 @@ public class DefaultWebSocketTest {
 
         ws.connect(ECHO_URI);
         byte[] data = new byte[] {0x1,0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8};
+        byte[] expected = data.clone();
         ws.send(data);
         Thread.sleep(1000);
 
@@ -305,7 +307,7 @@ public class DefaultWebSocketTest {
         receivedByteMessage = receivingDataListener.getReceivedBytes();
 
         for(int i = 0; i < data.length; i++) {
-            assertEquals("the received byte array must be equal to the sent byte array", data[i], receivedByteMessage[i]);
+            assertEquals("the received byte array must be equal to the sent byte array", expected[i], receivedByteMessage[i]);
         }
 
         ws.close();
@@ -321,6 +323,8 @@ public class DefaultWebSocketTest {
         byte[] data = new byte[126];
         r.nextBytes(data);
 
+        byte[] expected = data.clone();
+
         ws.send(data);
         Thread.sleep(1000);
 
@@ -329,7 +333,7 @@ public class DefaultWebSocketTest {
 
         receivedByteMessage = receivingDataListener.getReceivedBytes();
 
-        assertTrue("the received byte array must be equal to the sent byte array", Arrays.equals(data, receivedByteMessage));
+        assertTrue("the received byte array must be equal to the sent byte array", Arrays.equals(expected, receivedByteMessage));
 
         ws.close();
     }
@@ -344,6 +348,8 @@ public class DefaultWebSocketTest {
         byte[] data = new byte[65536];
         r.nextBytes(data);
 
+        byte[] expected = data.clone();
+
         ws.send(data);
         Thread.sleep(1000);
 
@@ -352,7 +358,7 @@ public class DefaultWebSocketTest {
 
         receivedByteMessage = receivingDataListener.getReceivedBytes();
 
-        assertTrue("the received byte array must be equal to the sent byte array", Arrays.equals(data, receivedByteMessage));
+        assertTrue("the received byte array must be equal to the sent byte array", Arrays.equals(expected, receivedByteMessage));
 
         ws.close();
     }
@@ -415,6 +421,68 @@ public class DefaultWebSocketTest {
     @Test
     public void testStreamByteChunksGreaterThan65535Bytes() throws Exception {
         streamByteChunks(65536);
+    }
+
+    /* ######################################################################## */
+    /* ######################################################################## */
+    /* ######################################################################## */
+
+    @Test
+    public void testReceiveDataAfterHavingConnected() throws Exception {
+        WebSocket ws = new DefaultWebSocket();
+        ws.setWebSocketListener(new WebSocketListener() {
+            @Override
+            public void onConnect() {
+            }
+
+            @Override
+            public void onClose() {
+            }
+
+            @Override
+            public void onMessage(String message) {
+                receivedStringMessage = message;
+            }
+
+            @Override
+            public void onMessage(byte[] message) {
+            }
+
+            @Override
+            public void onMessageChunk(String messageChunk, boolean isFinalChunk) {
+            }
+
+            @Override
+            public void onMessageChunk(byte[] messageChunk, boolean isFinalChunk) {
+            }
+
+            @Override
+            public void onPing() {
+            }
+
+            @Override
+            public void onPing(byte[] data) {
+            }
+
+            @Override
+            public void onPong() {
+            }
+
+            @Override
+            public void onPong(byte[] data) {
+            }
+        });
+
+        ws.connect("ws://127.0.0.1:8888/" + SendDataOnConnectWebSocketApplication.PATH);
+
+        Thread.sleep(1000);
+
+        assertNotNull("after having connected to the server it should have sent a text message -> receivedStringMessage cannot be null",
+                receivedStringMessage);
+
+        long timestamp = Long.parseLong(receivedStringMessage);
+
+        assertTrue("timestamp should be quite recent", timestamp > System.currentTimeMillis()-10000);
     }
 
     /* ######################################################################## */
@@ -578,6 +646,8 @@ public class DefaultWebSocketTest {
 
         final byte[] pingBytes = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8};
 
+        final byte[] expected = pingBytes.clone();
+
         ws.ping(pingBytes);
 
         Thread.sleep(500);
@@ -587,7 +657,7 @@ public class DefaultWebSocketTest {
 
         receivedByteMessage = receivingDataListener.getPongData();
         for(int i = 0; i < pingBytes.length; i++) {
-            assertEquals("sent ping bytes must be equal to received pong bytes", pingBytes[i], receivedByteMessage[i]);
+            assertEquals("sent ping bytes must be equal to received pong bytes", expected[i], receivedByteMessage[i]);
         }
 
         ws.close();
@@ -639,6 +709,7 @@ public class DefaultWebSocketTest {
         ws.connect(ECHO_URI);
 
         final byte[] pongBytes = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8};
+        final byte[] expected = pongBytes.clone();
 
         ws.pong(pongBytes);
 
@@ -650,7 +721,7 @@ public class DefaultWebSocketTest {
 
         receivedByteMessage = receivingDataListener.getPingData();
         for(int i = 0; i < pongBytes.length; i++) {
-            assertEquals("sent pong bytes must be equal to received ping bytes", pongBytes[i], receivedByteMessage[i]);
+            assertEquals("sent pong bytes must be equal to received ping bytes", expected[i], receivedByteMessage[i]);
         }
 
         ws.close();
@@ -692,27 +763,6 @@ public class DefaultWebSocketTest {
 
         assertEquals("the sent text must be equal to the text the server has received", expectedSb.toString(), textServerHasReceived);
 
-        /*
-        String expected = expectedSb.toString();
-
-        int attempts = 0;
-        while (!receivingDataListener.isFinished() && attempts < 5) {
-            Thread.sleep(1500);
-            attempts++;
-        }
-
-        if (!receivingDataListener.isFinished()) {
-            System.out.println("receivingDataListener.getText() -> " + receivingDataListener.getText());
-            fail("receivingDataListener hasn't finished in time. try to increase the sleep time or the number of attempts");
-        }
-
-        assertNotNull("receivingDataListener.getText() shall not be null after having waited for the echo", receivingDataListener.getText());
-
-        receivedStringMessage = receivingDataListener.getText();
-
-        assertEquals("the received text chunks must be equal to the sent text chunks", expected, receivedStringMessage);
-
-        */
         ws.close();
     }
 
@@ -731,7 +781,6 @@ public class DefaultWebSocketTest {
         byte[] data = new byte[chunkSize * STREAMING_SEQUENCE_LENGTH];
         r.nextBytes(data);
 
-        //System.out.println("streamByteChunks() ## expected: " + Arrays.toString(data));
 
         byte[] tmp;
         int x;
