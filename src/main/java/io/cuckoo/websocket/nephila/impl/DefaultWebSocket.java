@@ -54,6 +54,7 @@ public class DefaultWebSocket implements WebSocket {
     private InputStream                 input;
     private BufferedOutputStream        output;
     private WebSocketReceiver           receiver;
+    private volatile boolean            onCloseAlreadyCalled;
     private volatile boolean            connected;  // WebSocketReceiver-Thread may change the value
                                                     // [onServerClosingHandshake()]!
                                                     // Therefore this property must be marked as 'volatile'.
@@ -96,6 +97,7 @@ public class DefaultWebSocket implements WebSocket {
         this.log                    = new ConsoleLogger(webSocketConfig);
         this.connected              = false;
         this.streaming              = false;
+        this.onCloseAlreadyCalled   = false;
 
         // Network byte order is big endian
         //this.payloadSizeLessEqualThan65535Buffer     = ByteBuffer.allocateDirect(4).order(ByteOrder.BIG_ENDIAN);
@@ -135,6 +137,10 @@ public class DefaultWebSocket implements WebSocket {
         failFastOnAlreadyEstablishedConnection();
 
         try {
+            // reset internal state
+            streaming               = false;
+            onCloseAlreadyCalled    = false;
+
             // create opening handshake
             WebSocketHandshake handshake    = new WebSocketHandshake(uri);
 
@@ -330,8 +336,9 @@ public class DefaultWebSocket implements WebSocket {
             log.error(getClass(), "error while closing websocket connection: " + ignored.getMessage());
         }
         finally {
-            if (webSocketListener != null) {
+            if (webSocketListener != null && !onCloseAlreadyCalled) {
                 webSocketListener.onClose();
+                onCloseAlreadyCalled = true;
             }
         }
     }
